@@ -89,7 +89,10 @@ const workspaceRepository = {
         statusCode: StatusCodes.FORBIDDEN
       });
     }
-    const channel = await channelRepository.create({ name: channelName });
+    const channel = await channelRepository.create({
+      name: channelName,
+      workspaceId
+    });
     workspace.channels.push(channel);
     await Workspace.save();
     return workspace;
@@ -100,6 +103,14 @@ const workspaceRepository = {
       "members.memberId": memberId
     }).populate("members.memberId", "username email avatar");
     return workspaces;
+  },
+
+  getWorkspaceDetailsById: async function (workspaceId) {
+    const workspace = await Workspace.findById(workspaceId)
+      .populate("members.memberId", "username email avatar")
+      .populate("channels");
+
+    return workspace;
   }
 };
 
