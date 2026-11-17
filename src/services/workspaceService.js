@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import clientError from "../utils/errors/clientError.js";
 import { StatusCodes } from "http-status-codes";
 import userRepository from "../repositories/userRepository.js";
+import { addEmailToMailQueue } from "../producers/mailQueueProducers.js";
+import { workspaceJoinMail } from "../utils/common/mailObjects.js";
 
 const isUserAdminOfWorkspace = (workspace, userId) => {
   const response = workspace.members.find(
@@ -183,7 +185,8 @@ export const addMemberToWorkspaceService = async (
   userId
 ) => {
   try {
-    const workspace = await workspaceRepository.getWorkspaceDetailsById(workspaceId);
+    const workspace =
+      await workspaceRepository.getWorkspaceDetailsById(workspaceId);
     if (!workspace) {
       throw new clientError({
         explanation: "invalid data sent from the client",
@@ -220,6 +223,10 @@ export const addMemberToWorkspaceService = async (
       memberId,
       role
     );
+    addEmailToMailQueue({
+      ...workspaceJoinMail(workspace),
+      to: isValidUser.email
+    });
     return updatedWorkspace;
   } catch (error) {
     console.log("add Member To Workspace Service error:", error);
