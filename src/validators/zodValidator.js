@@ -1,21 +1,27 @@
 import { StatusCodes } from "http-status-codes";
+import { ZodError } from "zod";
+
 import { customErrorResponse } from "../utils/common/responseObject.js";
 
 export const validate = (schema) => {
   return async (req, res, next) => {
     try {
-      await schema.parseAsync(req.body);
+      req.body = await schema.parseAsync(req.body);
+      return next();
     } catch (error) {
-      let explanation = [];
-      let errorMessage = "";
-      error.errors.forEach((key) => {
-        explanation.push(key.path[0] + " " + key.message);
-        errorMessage += " : " + key.path[0] + " " + key.message;
+      if (!(error instanceof ZodError)) {
+        return next(error);
+      }
+
+      const explanation = error.issues.map((issue) => {
+        const path = issue.path.length ? issue.path.join(".") : "request";
+        return `${path} ${issue.message}`;
       });
-      res.status(StatusCodes.BAD_REQUEST).json(
+
+      return res.status(StatusCodes.BAD_REQUEST).json(
         customErrorResponse({
-          message: "validation error" + errorMessage,
-          explanation: explanation
+          message: `validation error: ${explanation.join("; ")}`,
+          explanation
         })
       );
     }

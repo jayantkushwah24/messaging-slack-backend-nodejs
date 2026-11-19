@@ -1,11 +1,12 @@
 import { StatusCodes } from "http-status-codes";
+import jwt from "jsonwebtoken";
+
+import { JWT_SECRET } from "../config/serverConfig.js";
+import userRepository from "../repositories/userRepository.js";
 import {
   customErrorResponse,
   internalErrorResponse
 } from "../utils/common/responseObject.js";
-import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../config/serverConfig.js";
-import userRepository from "../repositories/userRepository.js";
 
 export const isAuthenticated = async (req, res, next) => {
   try {
@@ -14,7 +15,7 @@ export const isAuthenticated = async (req, res, next) => {
     if (!token) {
       return res.status(StatusCodes.FORBIDDEN).json(
         customErrorResponse({
-          explaination: "Invalid data sent from the client",
+          explanation: "Invalid data sent from the client",
           message: "No auth token provided"
         })
       );
@@ -25,22 +26,31 @@ export const isAuthenticated = async (req, res, next) => {
     if (!response) {
       return res.status(StatusCodes.FORBIDDEN).json(
         customErrorResponse({
-          explaination: "Invalid data sent from the client",
+          explanation: "Invalid data sent from the client",
           message: "Invalid auth token provided"
         })
       );
     }
 
     const user = await userRepository.getById(response.id);
-    req.id = user.id;
-    next();
+    if (!user) {
+      return res.status(StatusCodes.FORBIDDEN).json(
+        customErrorResponse({
+          explanation: "Invalid data sent from the client",
+          message: "Invalid auth token provided"
+        })
+      );
+    }
+
+    req.user = user.id;
+    return next();
   } catch (error) {
     console.log("Auth middleware error", error);
 
     if (error.name === "JsonWebTokenError") {
       return res.status(StatusCodes.FORBIDDEN).json(
         customErrorResponse({
-          explaination: "Invalid data sent from the client",
+          explanation: "Invalid data sent from the client",
           message: "Invalid auth token provided"
         })
       );

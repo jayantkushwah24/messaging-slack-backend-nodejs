@@ -1,14 +1,21 @@
-import { StatusCodes } from "http-status-codes";
 import bcrypt from "bcrypt";
+import { StatusCodes } from "http-status-codes";
+
 import userRepository from "../repositories/userRepository.js";
+import { createJWT } from "../utils/common/authUtils.js";
 import clientError from "../utils/errors/clientError.js";
 import ValidationError from "../utils/errors/validationError.js";
-import { createJWT } from "../utils/common/authUtils.js";
 
 export const signUpService = async (data) => {
   try {
-    const newUser = await userRepository.create(data);
-    return newUser;
+    const user = await userRepository.create(data);
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatar: user.avatar,
+      isVerified: user.isVerified
+    };
   } catch (error) {
     console.log("user service error: ", error);
 
@@ -21,6 +28,8 @@ export const signUpService = async (data) => {
         error: ["a user with same email or username already exists"]
       });
     }
+
+    throw error;
   }
 };
 
@@ -30,17 +39,17 @@ export const signInService = async (data) => {
 
     if (!user) {
       throw new clientError({
-        explaination: "Invalid data sent from the client",
+        explanation: "Invalid data sent from the client",
         message: "No registered user found with this email",
         statusCode: StatusCodes.NOT_FOUND
       });
     }
 
-    const isMatch = bcrypt.compareSync(data.password, user.password);
+    const isMatch = await bcrypt.compare(data.password, user.password);
 
     if (!isMatch) {
       throw new clientError({
-        explaination: "Invalid data sent from the client",
+        explanation: "Invalid data sent from the client",
         message: "Invalid password please try again",
         statusCode: StatusCodes.BAD_REQUEST
       });

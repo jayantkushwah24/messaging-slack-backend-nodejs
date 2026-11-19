@@ -4,8 +4,8 @@ import crudRepository from "./crudRepository.js";
 const channelRepository = {
   ...crudRepository(Channel),
 
-  deleteMany: async function async(modelIds) {
-    const response = await ChannelModel.deleteMany({ _id: { $in: modelIds } });
+  deleteMany: async function (modelIds) {
+    const response = await Channel.deleteMany({ _id: { $in: modelIds } });
     return response;
   },
 

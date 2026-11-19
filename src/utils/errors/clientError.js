@@ -2,10 +2,9 @@ import { StatusCodes } from "http-status-codes";
 
 class clientError extends Error {
   constructor(error) {
-    super();
+    super(error.message);
     this.name = "ClientError";
-    this.message = error.message;
-    this.explaination = error.explaination;
+    this.explanation = error.explanation ?? error.explaination;
     this.statusCode = error.statusCode
       ? error.statusCode
       : StatusCodes.BAD_REQUEST;

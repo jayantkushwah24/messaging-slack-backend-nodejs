@@ -5,7 +5,7 @@ import {
   customErrorResponse,
   internalErrorResponse,
   successResponse
-} from "../utils/common/responseObjects.js";
+} from "../utils/common/responseObject.js";
 
 export const isMemberPartOfWorkspaceController = async function (req, res) {
   try {

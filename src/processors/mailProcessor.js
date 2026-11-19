@@ -9,5 +9,6 @@ mailQueues.process(async (job) => {
     console.log("Email sent: ", response);
   } catch (error) {
     console.log("error processing error: ", error);
+    throw error;
   }
 });

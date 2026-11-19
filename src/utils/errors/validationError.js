@@ -2,14 +2,14 @@ import { StatusCodes } from "http-status-codes";
 
 class ValidationError extends Error {
   constructor(errorDetails, message) {
-    super(message);
+    super(message || "Validation error");
     this.name = "ValidationError";
-    let explaination = [];
-    Object.keys(errorDetails.error).forEach((key) => {
-      explaination.push(errorDetails.error[key]);
-    });
-    this.explaination = explaination;
-    this.message = message;
+    const errors = errorDetails?.error;
+    this.explanation = Array.isArray(errors)
+      ? errors
+      : Object.values(errors || {}).map((error) =>
+          typeof error === "string" ? error : error.message
+        );
     this.statusCode = StatusCodes.BAD_REQUEST;
   }
 }

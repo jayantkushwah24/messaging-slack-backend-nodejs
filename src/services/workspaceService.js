@@ -1,25 +1,31 @@
-import channelRepository from "../repositories/channelRepository.js";
-import workspaceRepository from "../repositories/workspaceRepository.js";
-import { v4 as uuidv4 } from "uuid";
-import clientError from "../utils/errors/clientError.js";
 import { StatusCodes } from "http-status-codes";
-import userRepository from "../repositories/userRepository.js";
+import { v4 as uuidv4 } from "uuid";
+
 import { addEmailToMailQueue } from "../producers/mailQueueProducers.js";
+import channelRepository from "../repositories/channelRepository.js";
+import userRepository from "../repositories/userRepository.js";
+import workspaceRepository from "../repositories/workspaceRepository.js";
 import { workspaceJoinMail } from "../utils/common/mailObjects.js";
+import clientError from "../utils/errors/clientError.js";
+import ValidationError from "../utils/errors/validationError.js";
 
 const isUserAdminOfWorkspace = (workspace, userId) => {
   const response = workspace.members.find(
-    (member) =>
-      (member.memberId.toString() === userId ||
-        member.memberId._id.toString() === userId) &&
-      member.role === "admin"
+    (member) => {
+      const memberIdValue = member.memberId._id || member.memberId;
+      return (
+        memberIdValue.toString() === userId.toString() &&
+        member.role === "admin"
+      );
+    }
   );
   return response;
 };
 
 export const isUserMemberOfWorkspace = (workspace, userId) => {
   return workspace.members.find((member) => {
-    return member.memberId._id.toString() === userId;
+    const memberIdValue = member.memberId._id || member.memberId;
+    return memberIdValue.toString() === userId.toString();
   });
 };
 
@@ -76,6 +82,13 @@ export const getWorkspaceUserIsMemberOfService = async (userId) => {
 export const deleteWorkspaceService = async (workspaceId, userId) => {
   try {
     const workspace = await workspaceRepository.getById(workspaceId);
+    if (!workspace) {
+      throw new clientError({
+        explanation: "invalid data sent from the client",
+        message: "workspace not found",
+        statusCode: StatusCodes.NOT_FOUND
+      });
+    }
     const isAllowed = isUserAdminOfWorkspace(workspace, userId);
     if (isAllowed) {
       await channelRepository.deleteMany(workspace.channels);
@@ -202,7 +215,7 @@ export const addMemberToWorkspaceService = async (
         statusCode: StatusCodes.UNAUTHORIZED
       });
     }
-    const isValidUser = await userRepository.findById(memberId);
+    const isValidUser = await userRepository.getById(memberId);
     if (!isValidUser) {
       throw new clientError({
         explanation: "invalid data sent from the client",
@@ -223,7 +236,7 @@ export const addMemberToWorkspaceService = async (
       memberId,
       role
     );
-    addEmailToMailQueue({
+    await addEmailToMailQueue({
       ...workspaceJoinMail(workspace),
       to: isValidUser.email
     });
@@ -240,7 +253,8 @@ export const addChannelToWorkspaceService = async (
   userId
 ) => {
   try {
-    const workspace = await workspaceRepository.getById(workspaceId);
+    const workspace =
+      await workspaceRepository.getWorkspaceDetailsById(workspaceId);
     if (!workspace) {
       throw new clientError({
         explanation: "invalid data sent from the client",

@@ -1,9 +1,8 @@
-import { createBullBoard } from "@bull-board/api";
-import { BullAdapter } from "@bull-board/api/bullAdapter.js";
 import { ExpressAdapter } from "@bull-board/express";
-
-import mailQueue from "../queues/mailQueue.js";
+import mailQueue from "../queues/mailQueues.js";
 import testQueue from "../queues/testQueue.js";
+import { BullAdapter } from "@bull-board/api/bullAdapter";
+import { createBullBoard } from "@bull-board/api";
 
 const bullServerAdapter = new ExpressAdapter();
 bullServerAdapter.setBasePath("/ui");
